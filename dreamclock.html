@@ -1,0 +1,155 @@
+<meta charset="utf-8">
+<title>dreamclock</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+  /* Layout: the shader is the whole page. Single dark world, matching the shader's own background. */
+  :root { --ink: #07080e; color-scheme: dark }
+  html, body { height: 100%; background: var(--ink); overflow: hidden }
+  #stage { position: relative; width: 100%; height: 100%; touch-action: none; cursor: crosshair;
+    user-select: none; -webkit-user-select: none }
+  canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block }
+</style>
+
+<div id="stage" role="img" aria-label="A clock drawn by a hand-wired neural network. Moving the pointer changes its weights.">
+  <canvas id="gl"></canvas>
+</div>
+
+<script>
+const DATA = {"shader":"#version 300 es\nprecision highp float;\nlayout(std140) uniform Weights { vec4 P[122]; };\nuniform vec2 uRes;\nuniform float uScale, uSoft, uColon, uShow, uTime;\nuniform float uDigits[6];\nout vec4 outColor;\n// Whole units when the weights are exact (the network was wired for integers), continuous as they drift.\nfloat feed(float u) { return mix(floor(u), u - 0.5, uSoft); }\nvec3 pal(float t) { return 0.5 + 0.5 * cos(6.28318 * (vec3(1.0) * t + vec3(0.02, 0.36, 0.67))); }\nvoid main() {\n  vec2 p = (gl_FragCoord.xy - 0.5 * uRes) / uScale;\n  float v0 = feed(p.x + 43.5);\n  float v1 = feed(9.0 - p.y);\n  float v2 = uDigits[0];\n  float v3 = uDigits[1];\n  float v4 = uDigits[2];\n  float v5 = uDigits[3];\n  float v6 = uDigits[4];\n  float v7 = uDigits[5];\n  float v8 = uColon;\n  float v9 = P[0].x;\n  float v10 = (P[0].y) * max(0.0, P[0].z + P[0].w*v0);\n  float v11 = (P[1].x) * max(0.0, P[1].y + P[1].z*v10);\n  float v12 = P[1].w;\n  float v13 = (P[2].x) * max(0.0, P[2].y + P[2].z*v0);\n  float v14 = (P[2].w) * max(0.0, P[3].x + P[3].y*v13);\n  float v15 = P[3].z;\n  float v16 = (P[3].w) * max(0.0, P[4].x + P[4].y*v0);\n  float v17 = (P[4].z) * max(0.0, P[4].w + P[5].x*v16);\n  float v18 = P[5].y;\n  float v19 = (P[5].z) * max(0.0, P[5].w + P[6].x*v0);\n  float v20 = (P[6].y) * max(0.0, P[6].z + P[6].w*v19);\n  float v21 = P[7].x;\n  float v22 = (P[7].y) * max(0.0, P[7].z + P[7].w*v0);\n  float v23 = (P[8].x) * max(0.0, P[8].y + P[8].z*v22);\n  float v24 = P[8].w + P[9].x*v11;\n  float v25 = P[9].y + P[9].z*v11 + P[9].w*v14;\n  float v26 = P[10].x + P[10].y*v14 + P[10].z*v17;\n  float v27 = P[10].w + P[11].x*v17 + P[11].y*v20;\n  float v28 = P[11].z + P[11].w*v20 + P[12].x*v23;\n  float v29 = P[12].y + P[12].z*v0 + P[12].w*v11 + P[13].x*v14 + P[13].y*v17 + P[13].z*v20 + P[13].w*v23;\n  float v30 = (P[14].x + P[14].y*v24) * max(0.0, P[14].z + P[14].w*v2);\n  float v31 = (P[15].x + P[15].y*v25) * max(0.0, P[15].z + P[15].w*v3);\n  float v32 = (P[16].x + P[16].y*v26) * max(0.0, P[16].z + P[16].w*v4);\n  float v33 = (P[17].x + P[17].y*v27) * max(0.0, P[17].z + P[17].w*v5);\n  float v34 = (P[18].x + P[18].y*v28) * max(0.0, P[18].z + P[18].w*v6);\n  float v35 = (P[19].x + P[19].y*v23) * max(0.0, P[19].z + P[19].w*v7);\n  float v36 = P[20].x + P[20].y*v30 + P[20].z*v31 + P[20].w*v32 + P[21].x*v33 + P[21].y*v34 + P[21].z*v35;\n  float v37 = P[21].w;\n  float v38 = (P[22].x) * max(0.0, P[22].y + P[22].z*v36);\n  float v39 = (P[22].w) * max(0.0, P[23].x + P[23].y*v38);\n  float v40 = P[23].z;\n  float v41 = (P[23].w) * max(0.0, P[24].x + P[24].y*v36);\n  float v42 = (P[24].z) * max(0.0, P[24].w + P[25].x*v41);\n  float v43 = P[25].y;\n  float v44 = (P[25].z) * max(0.0, P[25].w + P[26].x*v36);\n  float v45 = (P[26].y) * max(0.0, P[26].z + P[26].w*v44);\n  float v46 = P[27].x;\n  float v47 = (P[27].y) * max(0.0, P[27].z + P[27].w*v36);\n  float v48 = (P[28].x) * max(0.0, P[28].y + P[28].z*v47);\n  float v49 = P[28].w;\n  float v50 = (P[29].x) * max(0.0, P[29].y + P[29].z*v36);\n  float v51 = (P[29].w) * max(0.0, P[30].x + P[30].y*v50);\n  float v52 = P[30].z;\n  float v53 = (P[30].w) * max(0.0, P[31].x + P[31].y*v36);\n  float v54 = (P[31].z) * max(0.0, P[31].w + P[32].x*v53);\n  float v55 = P[32].y;\n  float v56 = (P[32].z) * max(0.0, P[32].w + P[33].x*v36);\n  float v57 = (P[33].y) * max(0.0, P[33].z + P[33].w*v56);\n  float v58 = P[34].x;\n  float v59 = (P[34].y) * max(0.0, P[34].z + P[34].w*v36);\n  float v60 = (P[35].x) * max(0.0, P[35].y + P[35].z*v59);\n  float v61 = P[35].w;\n  float v62 = (P[36].x) * max(0.0, P[36].y + P[36].z*v36);\n  float v63 = (P[36].w) * max(0.0, P[37].x + P[37].y*v62);\n  float v64 = P[37].z + P[37].w*v39;\n  float v65 = P[38].x + P[38].y*v39 + P[38].z*v42;\n  float v66 = P[38].w + P[39].x*v42 + P[39].y*v45;\n  float v67 = P[39].z + P[39].w*v45 + P[40].x*v48;\n  float v68 = P[40].y + P[40].z*v48 + P[40].w*v51;\n  float v69 = P[41].x + P[41].y*v51 + P[41].z*v54;\n  float v70 = P[41].w + P[42].x*v54 + P[42].y*v57;\n  float v71 = P[42].z + P[42].w*v57 + P[43].x*v60;\n  float v72 = P[43].y + P[43].z*v60 + P[43].w*v63;\n  float v73 = P[44].x + P[44].y*v39 + P[44].z*v42 + P[44].w*v48 + P[45].x*v51;\n  float v74 = (P[45].y) * max(0.0, P[45].z + P[45].w*v29);\n  float v75 = (P[46].x) * max(0.0, P[46].y + P[46].z*v74);\n  float v76 = (P[46].w) * max(0.0, P[47].x + P[47].y*v29);\n  float v77 = (P[47].z) * max(0.0, P[47].w + P[48].x*v76);\n  float v78 = P[48].y;\n  float v79 = (P[48].z) * max(0.0, P[48].w + P[49].x*v1);\n  float v80 = (P[49].y) * max(0.0, P[49].z + P[49].w*v79);\n  float v81 = (P[50].x) * max(0.0, P[50].y + P[50].z*v1);\n  float v82 = (P[50].w) * max(0.0, P[51].x + P[51].y*v81);\n  float v83 = (P[51].z) * max(0.0, P[51].w + P[52].x*v75 + P[52].y*v77 + P[52].z*v80 + P[52].w*v82);\n  float v84 = (P[53].x + P[53].y*v73) * max(0.0, P[53].z + P[53].w*v83);\n  float v85 = P[54].x + P[54].y*v51 + P[54].z*v57;\n  float v86 = (P[54].w) * max(0.0, P[55].x + P[55].y*v29);\n  float v87 = (P[55].z) * max(0.0, P[55].w + P[56].x*v86);\n  float v88 = P[56].y;\n  float v89 = (P[56].z) * max(0.0, P[56].w + P[57].x*v29);\n  float v90 = (P[57].y) * max(0.0, P[57].z + P[57].w*v89);\n  float v91 = (P[58].x) * max(0.0, P[58].y + P[58].z*v1);\n  float v92 = (P[58].w) * max(0.0, P[59].x + P[59].y*v91);\n  float v93 = (P[59].z) * max(0.0, P[59].w + P[60].x*v1);\n  float v94 = (P[60].y) * max(0.0, P[60].z + P[60].w*v93);\n  float v95 = (P[61].x) * max(0.0, P[61].y + P[61].z*v87 + P[61].w*v90 + P[62].x*v92 + P[62].y*v94);\n  float v96 = (P[62].z + P[62].w*v85) * max(0.0, P[63].x + P[63].y*v95);\n  float v97 = P[63].z + P[63].w*v42 + P[64].x*v45;\n  float v98 = (P[64].y) * max(0.0, P[64].z + P[64].w*v1);\n  float v99 = (P[65].x) * max(0.0, P[65].y + P[65].z*v98);\n  float v100 = P[65].w;\n  float v101 = (P[66].x) * max(0.0, P[66].y + P[66].z*v1);\n  float v102 = (P[66].w) * max(0.0, P[67].x + P[67].y*v101);\n  float v103 = (P[67].z) * max(0.0, P[67].w + P[68].x*v87 + P[68].y*v90 + P[68].z*v99 + P[68].w*v102);\n  float v104 = (P[69].x + P[69].y*v97) * max(0.0, P[69].z + P[69].w*v103);\n  float v105 = P[70].x + P[70].y*v39 + P[70].z*v42 + P[70].w*v48 + P[71].x*v51 + P[71].y*v57 + P[71].z*v60;\n  float v106 = (P[71].w) * max(0.0, P[72].x + P[72].y*v1);\n  float v107 = (P[72].z) * max(0.0, P[72].w + P[73].x*v106);\n  float v108 = P[73].y;\n  float v109 = (P[73].z) * max(0.0, P[73].w + P[74].x*v1);\n  float v110 = (P[74].y) * max(0.0, P[74].z + P[74].w*v109);\n  float v111 = (P[75].x) * max(0.0, P[75].y + P[75].z*v75 + P[75].w*v77 + P[76].x*v107 + P[76].y*v110);\n  float v112 = (P[76].z + P[76].w*v105) * max(0.0, P[77].x + P[77].y*v111);\n  float v113 = P[77].z + P[77].w*v39 + P[78].x*v42 + P[78].y*v45 + P[78].z*v54 + P[78].w*v57 + P[79].x*v60 + P[79].y*v63;\n  float v114 = (P[79].z) * max(0.0, P[79].w + P[80].x*v29);\n  float v115 = (P[80].y) * max(0.0, P[80].z + P[80].w*v114);\n  float v116 = (P[81].x) * max(0.0, P[81].y + P[81].z*v29);\n  float v117 = (P[81].w) * max(0.0, P[82].x + P[82].y*v116);\n  float v118 = (P[82].z) * max(0.0, P[82].w + P[83].x*v99 + P[83].y*v102 + P[83].z*v115 + P[83].w*v117);\n  float v119 = (P[84].x + P[84].y*v113) * max(0.0, P[84].z + P[84].w*v118);\n  float v120 = P[85].x + P[85].y*v39 + P[85].z*v48 + P[85].w*v57 + P[86].x*v60;\n  float v121 = (P[86].y) * max(0.0, P[86].z + P[86].w*v92 + P[87].x*v94 + P[87].y*v115 + P[87].z*v117);\n  float v122 = (P[87].w + P[88].x*v120) * max(0.0, P[88].y + P[88].z*v121);\n  float v123 = P[88].w + P[89].x*v42 + P[89].y*v57 + P[89].z*v60;\n  float v124 = (P[89].w) * max(0.0, P[90].x + P[90].y*v1);\n  float v125 = (P[90].z) * max(0.0, P[90].w + P[91].x*v124);\n  float v126 = (P[91].y) * max(0.0, P[91].z + P[91].w*v1);\n  float v127 = (P[92].x) * max(0.0, P[92].y + P[92].z*v126);\n  float v128 = (P[92].w) * max(0.0, P[93].x + P[93].y*v75 + P[93].z*v77 + P[93].w*v125 + P[94].x*v127);\n  float v129 = (P[94].y + P[94].z*v123) * max(0.0, P[94].w + P[95].x*v128);\n  float v130 = P[95].y;\n  float v131 = (P[95].z) * max(0.0, P[95].w + P[96].x*v0);\n  float v132 = (P[96].y) * max(0.0, P[96].z + P[96].w*v131);\n  float v133 = P[97].x;\n  float v134 = (P[97].y) * max(0.0, P[97].z + P[97].w*v0);\n  float v135 = (P[98].x) * max(0.0, P[98].y + P[98].z*v134);\n  float v136 = (P[98].w) * max(0.0, P[99].x + P[99].y*v1);\n  float v137 = (P[99].z) * max(0.0, P[99].w + P[100].x*v136);\n  float v138 = (P[100].y) * max(0.0, P[100].z + P[100].w*v1);\n  float v139 = (P[101].x) * max(0.0, P[101].y + P[101].z*v138);\n  float v140 = (P[101].w) * max(0.0, P[102].x + P[102].y*v132 + P[102].z*v135 + P[102].w*v137 + P[103].x*v139);\n  float v141 = (P[103].y + P[103].z*v8) * max(0.0, P[103].w + P[104].x*v140);\n  float v142 = P[104].y;\n  float v143 = (P[104].z) * max(0.0, P[104].w + P[105].x*v1);\n  float v144 = (P[105].y) * max(0.0, P[105].z + P[105].w*v143);\n  float v145 = P[106].x;\n  float v146 = (P[106].y) * max(0.0, P[106].z + P[106].w*v1);\n  float v147 = (P[107].x) * max(0.0, P[107].y + P[107].z*v146);\n  float v148 = (P[107].w) * max(0.0, P[108].x + P[108].y*v132 + P[108].z*v135 + P[108].w*v144 + P[109].x*v147);\n  float v149 = (P[109].y + P[109].z*v8) * max(0.0, P[109].w + P[110].x*v148);\n  float v150 = P[110].y;\n  float v151 = (P[110].z) * max(0.0, P[110].w + P[111].x*v0);\n  float v152 = (P[111].y) * max(0.0, P[111].z + P[111].w*v151);\n  float v153 = P[112].x;\n  float v154 = (P[112].y) * max(0.0, P[112].z + P[112].w*v0);\n  float v155 = (P[113].x) * max(0.0, P[113].y + P[113].z*v154);\n  float v156 = (P[113].w) * max(0.0, P[114].x + P[114].y*v137 + P[114].z*v139 + P[114].w*v152 + P[115].x*v155);\n  float v157 = (P[115].y + P[115].z*v8) * max(0.0, P[115].w + P[116].x*v156);\n  float v158 = (P[116].y) * max(0.0, P[116].z + P[116].w*v144 + P[117].x*v147 + P[117].y*v152 + P[117].z*v155);\n  float v159 = (P[117].w + P[118].x*v8) * max(0.0, P[118].y + P[118].z*v158);\n  float v160 = P[118].w + P[119].x*v84 + P[119].y*v96 + P[119].z*v104 + P[119].w*v112 + P[120].x*v119 + P[120].y*v122 + P[120].z*v129 + P[120].w*v141 + P[121].x*v149 + P[121].y*v157 + P[121].z*v159;\n  float o = v160;\n  int show = int(uShow);\n  if (show >= 0) {\n    float h[152];\n    h[0] = v9;\n    h[1] = v10;\n    h[2] = v11;\n    h[3] = v12;\n    h[4] = v13;\n    h[5] = v14;\n    h[6] = v15;\n    h[7] = v16;\n    h[8] = v17;\n    h[9] = v18;\n    h[10] = v19;\n    h[11] = v20;\n    h[12] = v21;\n    h[13] = v22;\n    h[14] = v23;\n    h[15] = v24;\n    h[16] = v25;\n    h[17] = v26;\n    h[18] = v27;\n    h[19] = v28;\n    h[20] = v29;\n    h[21] = v30;\n    h[22] = v31;\n    h[23] = v32;\n    h[24] = v33;\n    h[25] = v34;\n    h[26] = v35;\n    h[27] = v36;\n    h[28] = v37;\n    h[29] = v38;\n    h[30] = v39;\n    h[31] = v40;\n    h[32] = v41;\n    h[33] = v42;\n    h[34] = v43;\n    h[35] = v44;\n    h[36] = v45;\n    h[37] = v46;\n    h[38] = v47;\n    h[39] = v48;\n    h[40] = v49;\n    h[41] = v50;\n    h[42] = v51;\n    h[43] = v52;\n    h[44] = v53;\n    h[45] = v54;\n    h[46] = v55;\n    h[47] = v56;\n    h[48] = v57;\n    h[49] = v58;\n    h[50] = v59;\n    h[51] = v60;\n    h[52] = v61;\n    h[53] = v62;\n    h[54] = v63;\n    h[55] = v64;\n    h[56] = v65;\n    h[57] = v66;\n    h[58] = v67;\n    h[59] = v68;\n    h[60] = v69;\n    h[61] = v70;\n    h[62] = v71;\n    h[63] = v72;\n    h[64] = v73;\n    h[65] = v74;\n    h[66] = v75;\n    h[67] = v76;\n    h[68] = v77;\n    h[69] = v78;\n    h[70] = v79;\n    h[71] = v80;\n    h[72] = v81;\n    h[73] = v82;\n    h[74] = v83;\n    h[75] = v84;\n    h[76] = v85;\n    h[77] = v86;\n    h[78] = v87;\n    h[79] = v88;\n    h[80] = v89;\n    h[81] = v90;\n    h[82] = v91;\n    h[83] = v92;\n    h[84] = v93;\n    h[85] = v94;\n    h[86] = v95;\n    h[87] = v96;\n    h[88] = v97;\n    h[89] = v98;\n    h[90] = v99;\n    h[91] = v100;\n    h[92] = v101;\n    h[93] = v102;\n    h[94] = v103;\n    h[95] = v104;\n    h[96] = v105;\n    h[97] = v106;\n    h[98] = v107;\n    h[99] = v108;\n    h[100] = v109;\n    h[101] = v110;\n    h[102] = v111;\n    h[103] = v112;\n    h[104] = v113;\n    h[105] = v114;\n    h[106] = v115;\n    h[107] = v116;\n    h[108] = v117;\n    h[109] = v118;\n    h[110] = v119;\n    h[111] = v120;\n    h[112] = v121;\n    h[113] = v122;\n    h[114] = v123;\n    h[115] = v124;\n    h[116] = v125;\n    h[117] = v126;\n    h[118] = v127;\n    h[119] = v128;\n    h[120] = v129;\n    h[121] = v130;\n    h[122] = v131;\n    h[123] = v132;\n    h[124] = v133;\n    h[125] = v134;\n    h[126] = v135;\n    h[127] = v136;\n    h[128] = v137;\n    h[129] = v138;\n    h[130] = v139;\n    h[131] = v140;\n    h[132] = v141;\n    h[133] = v142;\n    h[134] = v143;\n    h[135] = v144;\n    h[136] = v145;\n    h[137] = v146;\n    h[138] = v147;\n    h[139] = v148;\n    h[140] = v149;\n    h[141] = v150;\n    h[142] = v151;\n    h[143] = v152;\n    h[144] = v153;\n    h[145] = v154;\n    h[146] = v155;\n    h[147] = v156;\n    h[148] = v157;\n    h[149] = v158;\n    h[150] = v159;\n    h[151] = v160;\n    o = h[show];\n  }\n  float c = clamp(o, 0.0, 1.0);\n  float e = o - c;\n  vec3 bg = vec3(0.027, 0.031, 0.055);\n  vec3 lit = vec3(1.0, 0.93, 0.82);\n  vec3 col = mix(bg, lit, c);\n  float t = sign(e) * log(1.0 + abs(e));\n  float dream = 1.0 - exp(-abs(e) * 1.2);\n  col = mix(col, pal(t * 0.32 + 0.025 * uTime), dream * 0.9);\n  col *= 1.0 - 0.18 * dream * smoothstep(0.85, 1.0, fract(t * 1.5));\n  outColor = vec4(pow(col, vec3(0.95)), 1.0);\n}","params":[11.5,1,23,-2,1,1,-1,30.5,1,61,-2,1,1,-1,43.5,1,87,-2,1,1,-1,62.5,1,125,-2,1,1,-1,75.5,1,151,-2,1,1,-1,1,-1,0,1,-1,0,1,-1,0,1,-1,0,1,-1,0,1,-13,-19,-13,-19,-13,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,1,1,1,1,1,1,1,1,-1,1,1,-1,2,1,2,-1,1,1,-1,3,1,3,-1,1,1,-1,4,1,4,-1,1,1,-1,5,1,5,-1,1,1,-1,6,1,6,-1,1,1,-1,7,1,7,-1,1,1,-1,8,1,8,-1,1,1,-1,9,1,9,-1,1,1,-1,1,-1,0,1,-1,0,1,-1,0,1,-1,0,1,-1,0,1,-1,0,1,-1,0,1,-1,0,1,-1,1,-1,1,-1,1,1,2,-1,1,1,-1,1,-7,1,1,1,-1,0,1,0,-1,1,1,-1,1,-1,1,1,1,-1,1,-3,1,1,1,1,0,1,0,1,1,-1,1,1,8,-1,1,1,-1,10,1,-9,1,1,1,-1,1,2,-1,1,1,-1,1,-7,1,1,1,-1,1,-3,1,1,1,1,0,1,0,1,1,-1,1,1,10,-1,1,1,-1,16,1,-15,1,1,1,-1,1,-3,1,1,1,1,0,1,0,1,1,-1,1,-1,1,-1,1,1,16,-1,1,1,-1,18,1,-17,1,1,1,-1,1,-3,1,1,1,1,0,1,0,1,1,-1,1,-1,1,-1,1,-1,1,0,-1,1,1,-1,1,-1,1,1,1,-1,1,-3,1,1,1,1,0,1,0,1,1,-1,1,-1,1,1,-3,1,1,1,1,0,1,0,1,0,1,-1,1,1,8,-1,1,1,-1,1,-9,1,1,1,-1,1,-3,1,1,1,1,0,1,0,1,27,1,27,-1,1,1,-1,29,1,-28,1,1,1,-1,1,5,-1,1,1,-1,1,-6,1,1,1,-1,1,-3,1,1,1,1,0,1,0,1,11,1,11,-1,1,1,-1,13,1,-12,1,1,1,-1,1,-3,1,1,1,1,0,1,0,1,59,1,59,-1,1,1,-1,61,1,-60,1,1,1,-1,1,-3,1,1,1,1,0,1,0,1,1,-3,1,1,1,1,0,1,0,1,0,1,1,1,1,1,1,1,1,1,1,1],"labels":["11.5","(1) × relu(-2·x + 23)","(1) × relu(−n1 + 1)","30.5","(1) × relu(-2·x + 61)","(1) × relu(−n4 + 1)","43.5","(1) × relu(-2·x + 87)","(1) × relu(−n7 + 1)","62.5","(1) × relu(-2·x + 125)","(1) × relu(−n10 + 1)","75.5","(1) × relu(-2·x + 151)","(1) × relu(−n13 + 1)","−n2 + 1","n2 − n5","n5 − n8","n8 − n11","n11 − n14","x − 13·n2 − 19·n5 − 13·n8 − 19·n11 − 13·n14","(n15) × relu(d1)","(n16) × relu(d2)","(n17) × relu(d3)","(n18) × relu(d4)","(n19) × relu(d5)","(n14) × relu(d6)","n21 + n22 + n23 + n24 + n25 + n26","1","(1) × relu(−n27 + 1)","(1) × relu(−n29 + 1)","2","(1) × relu(−n27 + 2)","(1) × relu(−n32 + 1)","3","(1) × relu(−n27 + 3)","(1) × relu(−n35 + 1)","4","(1) × relu(−n27 + 4)","(1) × relu(−n38 + 1)","5","(1) × relu(−n27 + 5)","(1) × relu(−n41 + 1)","6","(1) × relu(−n27 + 6)","(1) × relu(−n44 + 1)","7","(1) × relu(−n27 + 7)","(1) × relu(−n47 + 1)","8","(1) × relu(−n27 + 8)","(1) × relu(−n50 + 1)","9","(1) × relu(−n27 + 9)","(1) × relu(−n53 + 1)","−n30 + 1","n30 − n33","n33 − n36","n36 − n39","n39 − n42","n42 − n45","n45 − n48","n48 − n51","n51 − n54","−n30 + n33 − n39 + n42 + 1","(1) × relu(−n20 + 2)","(1) × relu(−n65 + 1)","(1) × relu(n20 − 7)","(1) × relu(−n67 + 1)","0","(1) × relu(−y)","(1) × relu(−n70 + 1)","(1) × relu(y − 1)","(1) × relu(−n72 + 1)","(1) × relu(n66 + n68 + n71 + n73 − 3)","(n64) × relu(n74)","−n42 + n48 + 1","(1) × relu(−n20 + 8)","(1) × relu(−n77 + 1)","10","(1) × relu(n20 − 9)","(1) × relu(−n80 + 1)","(1) × relu(−y + 2)","(1) × relu(−n82 + 1)","(1) × relu(y − 7)","(1) × relu(−n84 + 1)","(1) × relu(n78 + n81 + n83 + n85 − 3)","(n76) × relu(n86)","−n33 + n36 + 1","(1) × relu(−y + 10)","(1) × relu(−n89 + 1)","16","(1) × relu(y − 15)","(1) × relu(−n92 + 1)","(1) × relu(n78 + n81 + n90 + n93 − 3)","(n88) × relu(n94)","−n30 + n33 − n39 + n42 − n48 + n51 + 1","(1) × relu(−y + 16)","(1) × relu(−n97 + 1)","18","(1) × relu(y − 17)","(1) × relu(−n100 + 1)","(1) × relu(n66 + n68 + n98 + n101 − 3)","(n96) × relu(n102)","−n30 + n33 − n36 + n45 − n48 + n51 − n54 + 1","(1) × relu(−n20)","(1) × relu(−n105 + 1)","(1) × relu(n20 − 1)","(1) × relu(−n107 + 1)","(1) × relu(n90 + n93 + n106 + n108 − 3)","(n104) × relu(n109)","−n30 + n39 − n48 + n51 + 1","(1) × relu(n83 + n85 + n106 + n108 − 3)","(n111) × relu(n112)","n33 − n48 + n51","(1) × relu(−y + 8)","(1) × relu(−n115 + 1)","(1) × relu(y − 9)","(1) × relu(−n117 + 1)","(1) × relu(n66 + n68 + n116 + n118 − 3)","(n114) × relu(n119)","27","(1) × relu(−x + 27)","(1) × relu(−n122 + 1)","29","(1) × relu(x − 28)","(1) × relu(−n125 + 1)","(1) × relu(−y + 5)","(1) × relu(−n127 + 1)","(1) × relu(y − 6)","(1) × relu(−n129 + 1)","(1) × relu(n123 + n126 + n128 + n130 − 3)","(colon) × relu(n131)","11","(1) × relu(−y + 11)","(1) × relu(−n134 + 1)","13","(1) × relu(y − 12)","(1) × relu(−n137 + 1)","(1) × relu(n123 + n126 + n135 + n138 − 3)","(colon) × relu(n139)","59","(1) × relu(−x + 59)","(1) × relu(−n142 + 1)","61","(1) × relu(x − 60)","(1) × relu(−n145 + 1)","(1) × relu(n128 + n130 + n143 + n146 − 3)","(colon) × relu(n147)","(1) × relu(n135 + n138 + n143 + n146 − 3)","(colon) × relu(n149)","n75 + n87 + n95 + n103 + n110 + n113 + n120 + n132 + n140 + n148 + n150"],"neurons":152,"units":128,"paramCount":487,"weightCount":231,"reglus":104,"depth":10,"layout":{"digitX":[0,13,32,45,64,77],"colonX":[27,59],"width":87,"height":18}}
+const stage = document.getElementById('stage')
+const canvas = document.getElementById('gl')
+const gl = canvas.getContext('webgl2', {antialias: false})
+
+let seed = 7
+function rand() { seed = (seed + 0x6D2B79F5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296 }
+function gauss() { return Math.sqrt(-2 * Math.log(rand() + 1e-9)) * Math.cos(6.283185307 * rand()) }
+
+const P0 = Float32Array.from(DATA.params)
+const n = P0.length
+const P = new Float32Array(Math.ceil(n / 4) * 4)
+// Two random directions through weight space. A click fades from the old pair to a new pair.
+const directions = () => {
+  const U = new Float32Array(n), V = new Float32Array(n)
+  for (let j = 0; j < n; j++) {
+    const scale = 0.035 * Math.abs(P0[j]) + 0.05
+    U[j] = gauss() * scale
+    V[j] = gauss() * scale
+  }
+  return {U, V}
+}
+let from = directions(), to = from, blend = 1
+function reroll() {
+  const mixed = {U: new Float32Array(n), V: new Float32Array(n)}
+  const e = ease(blend)
+  for (let j = 0; j < n; j++) {
+    mixed.U[j] = from.U[j] + (to.U[j] - from.U[j]) * e
+    mixed.V[j] = from.V[j] + (to.V[j] - from.V[j]) * e
+  }
+  from = mixed
+  seed = (Math.random() * 1e9) | 0
+  to = directions()
+  blend = 0
+}
+const ease = t => t * t * (3 - 2 * t)
+
+// Pointer position picks a point (a, b) on the slice; the center is the exact hand-written weights.
+const curve = v => Math.sign(v) * Math.pow(Math.abs(v), 1.6) * 2.4
+let target = {a: 0, b: 0}, cur = {a: 0, b: 0}, vel = {a: 0, b: 0}
+let lastPointer = -1e9
+function pointer(event) {
+  const rect = stage.getBoundingClientRect()
+  const nx = (event.clientX - rect.left) / rect.width * 2 - 1
+  const ny = (event.clientY - rect.top) / rect.height * 2 - 1
+  target = {a: curve(Math.max(-1, Math.min(1, nx))), b: curve(Math.max(-1, Math.min(1, ny)))}
+  lastPointer = performance.now()
+}
+stage.addEventListener('pointermove', pointer)
+stage.addEventListener('pointerdown', event => {
+  pointer(event)
+  if (event.pointerType === 'mouse') reroll()
+})
+// Touch: a double tap rerolls, since a single touch is how you move.
+let lastTap = 0
+stage.addEventListener('pointerup', event => {
+  if (event.pointerType === 'mouse') return
+  const now = performance.now()
+  if (now - lastTap < 320) reroll()
+  lastTap = now
+})
+window.addEventListener('keydown', event => {
+  if (event.key === ' ' || event.key === 'Enter') { event.preventDefault(); reroll() }
+  if (event.key === 'Escape' || event.key === '0') { target = {a: 0, b: 0}; lastPointer = performance.now() }
+})
+
+if (gl) {
+  const vs = `#version 300 es
+  void main() { vec2 p = vec2((gl_VertexID << 1) & 2, gl_VertexID & 2); gl_Position = vec4(p * 2.0 - 1.0, 0.0, 1.0); }`
+  const compile = (type, src) => {
+    const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s)
+    if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s))
+    return s
+  }
+  const prog = gl.createProgram()
+  gl.attachShader(prog, compile(gl.VERTEX_SHADER, vs))
+  gl.attachShader(prog, compile(gl.FRAGMENT_SHADER, DATA.shader))
+  gl.linkProgram(prog)
+  gl.useProgram(prog)
+  const ubo = gl.createBuffer()
+  gl.bindBuffer(gl.UNIFORM_BUFFER, ubo)
+  gl.bufferData(gl.UNIFORM_BUFFER, P.byteLength, gl.DYNAMIC_DRAW)
+  gl.uniformBlockBinding(prog, gl.getUniformBlockIndex(prog, 'Weights'), 0)
+  gl.bindBufferBase(gl.UNIFORM_BUFFER, 0, ubo)
+  const u = name => gl.getUniformLocation(prog, name)
+  const loc = {res: u('uRes'), scale: u('uScale'), soft: u('uSoft'), colon: u('uColon'), show: u('uShow'), time: u('uTime'), digits: u('uDigits')}
+  gl.bindVertexArray(gl.createVertexArray())
+  gl.uniform1f(loc.show, -1)
+
+  let then = performance.now()
+  function frame(now) {
+    const dt = Math.min(0.05, (now - then) / 1000); then = now
+    // Idle: drift in and out of the readable region on its own.
+    if (now - lastPointer > 3000) {
+      const t = now / 1000
+      const r = 1.1 * (0.5 - 0.5 * Math.cos(t * 0.3))
+      target = {a: r * Math.cos(t * 0.17), b: r * Math.sin(t * 0.23)}
+    }
+    for (const key of ['a', 'b']) {
+      const k = 60, c = 2 * Math.sqrt(k)
+      vel[key] += (k * (target[key] - cur[key]) - c * vel[key]) * dt
+      cur[key] += vel[key] * dt
+    }
+    blend = Math.min(1, blend + dt / 1.2)
+    const e = ease(blend)
+    for (let j = 0; j < n; j++) {
+      const U = from.U[j] + (to.U[j] - from.U[j]) * e
+      const V = from.V[j] + (to.V[j] - from.V[j]) * e
+      P[j] = P0[j] + cur.a * U + cur.b * V
+    }
+    gl.bindBuffer(gl.UNIFORM_BUFFER, ubo)
+    gl.bufferSubData(gl.UNIFORM_BUFFER, 0, P)
+
+    const dpr = Math.min(window.devicePixelRatio || 1, 2)
+    const w = Math.round(stage.clientWidth * dpr), h = Math.round(stage.clientHeight * dpr)
+    if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h }
+    gl.viewport(0, 0, w, h)
+    const L = DATA.layout
+    const scale = Math.min(w * 0.8 / L.width, h * 0.4 / L.height)
+    const soft = Math.min(1, Math.hypot(cur.a, cur.b) / 1.2)
+
+    const date = new Date()
+    const hh = date.getHours(), mm = date.getMinutes(), s = date.getSeconds(), ms = date.getMilliseconds()
+    const morph = ms > 750 && s % 10 !== 9 ? (ms - 750) / 250 : 0
+    const digits = [Math.floor(hh / 10), hh % 10, Math.floor(mm / 10), mm % 10, Math.floor(s / 10), (s % 10) + ease(morph)]
+
+    gl.uniform2f(loc.res, w, h)
+    gl.uniform1f(loc.scale, scale)
+    gl.uniform1f(loc.soft, soft)
+    gl.uniform1f(loc.colon, ms < 500 ? 1 : 0.15)
+    gl.uniform1f(loc.time, now / 1000)
+    gl.uniform1fv(loc.digits, digits)
+    gl.drawArrays(gl.TRIANGLES, 0, 3)
+    requestAnimationFrame(frame)
+  }
+  requestAnimationFrame(frame)
+}
+</script>

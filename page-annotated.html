@@ -1,0 +1,283 @@
+<meta charset="utf-8">
+<title>Weight Space Clock</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,300;12..96,600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+  /* Layout: a full-bleed shader canvas as the piece itself, with instrument readouts pinned to its corners, then a
+     narrow reading column below. Single dark world: the canvas is a night sky of lit segments. */
+  :root {
+    --ink: #07080e;        /* matches the shader's background */
+    --panel: #11131c;
+    --text: #ece6da;       /* the lit segment color */
+    --muted: #8a8c9a;
+    --line: #262938;
+    --dream: #9fd4ff;      /* a cool hue from the dream palette */
+    --display: "Bricolage Grotesque", "Helvetica Neue", Arial, sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+    color-scheme: dark;
+  }
+  html, body { background: var(--ink); color: var(--text) }
+  body { font-family: var(--display); font-weight: 300; font-size: 16px; line-height: 1.6 }
+  a { color: var(--dream) }
+  :focus-visible { outline: 2px solid var(--dream); outline-offset: 3px }
+
+  .stage { position: relative; height: max(440px, 82vh); overflow: hidden; border-bottom: 1px solid var(--line);
+    touch-action: none; cursor: crosshair; user-select: none; -webkit-user-select: none }
+  canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block }
+  .hud { position: absolute; display: flex; flex-direction: column; gap: 6px; pointer-events: none;
+    font-family: var(--mono); font-size: 12px; letter-spacing: 0.02em; color: var(--muted) }
+  .hud.tl { top: 18px; left: max(18px, env(safe-area-inset-left, 0px)); right: max(18px, env(safe-area-inset-right, 0px)) }
+  .hud.bl { bottom: 18px; left: max(18px, env(safe-area-inset-left, 0px)); flex-direction: row; align-items: flex-end; gap: 14px }
+  .hud.br { bottom: 18px; right: max(18px, env(safe-area-inset-right, 0px)); pointer-events: auto; align-items: flex-end; width: min(330px, calc(100% - 36px)) }
+  h1 { margin: 0; font-weight: 600; font-size: clamp(22px, 3.2vw, 34px); line-height: 1.05; letter-spacing: -0.02em;
+    color: var(--text); text-wrap: balance }
+  .tagline { max-width: 46ch; color: var(--muted); font-family: var(--display); font-size: 14px; line-height: 1.45 }
+  .stats { font-variant-numeric: tabular-nums; text-transform: uppercase; letter-spacing: 0.08em; font-size: 11px }
+
+  .slice { width: 76px; height: 76px; border: 1px solid var(--line); border-radius: 50%; position: relative;
+    background: radial-gradient(circle, rgb(236 230 218 / 0.08) 0 22%, transparent 23%), rgb(7 8 14 / 0.55);
+    backdrop-filter: blur(4px); flex: none }
+  .slice::before, .slice::after { content: ""; position: absolute; background: var(--line) }
+  .slice::before { left: 50%; top: 6px; bottom: 6px; width: 1px }
+  .slice::after { top: 50%; left: 6px; right: 6px; height: 1px }
+  .dot { position: absolute; width: 8px; height: 8px; margin: -4px 0 0 -4px; border-radius: 50%; background: var(--text);
+    box-shadow: 0 0 10px var(--dream); left: 50%; top: 50%; z-index: 1 }
+  .readout { font-variant-numeric: tabular-nums; line-height: 1.5; color: var(--muted); white-space: nowrap }
+  .readout b { color: var(--text); font-weight: 500 }
+
+  .panel { background: rgb(17 19 28 / 0.78); backdrop-filter: blur(8px); border: 1px solid var(--line);
+    border-radius: 10px; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; width: 100% }
+  .panel label { display: flex; justify-content: space-between; color: var(--muted); text-transform: uppercase;
+    letter-spacing: 0.08em; font-size: 11px }
+  .panel label output { color: var(--text); font-variant-numeric: tabular-nums }
+  .formula { color: var(--text); font-size: 11.5px; line-height: 1.45; min-height: 2.9em; overflow-wrap: anywhere }
+  input[type=range] { width: 100%; accent-color: var(--text) }
+  .buttons { display: flex; gap: 8px; flex-wrap: wrap }
+  button { font: inherit; font-size: 12px; color: var(--text); background: transparent; border: 1px solid var(--line);
+    border-radius: 999px; padding: 5px 12px; cursor: pointer }
+  button:hover { border-color: var(--muted) }
+
+  main { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+    padding-block: 56px 72px }
+  .col { max-width: 64ch; margin: 0 auto; display: flex; flex-direction: column; gap: 18px }
+  h2 { margin: 0; font-weight: 600; font-size: 26px; line-height: 1.15; letter-spacing: -0.015em; text-wrap: balance }
+  p { margin: 0; color: #cfc9be }
+  .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--line); border: 1px solid var(--line);
+    border-radius: 10px; overflow: hidden; font-family: var(--mono); font-size: 13px }
+  .pair > div { background: var(--panel); padding: 14px 16px; min-width: 0; overflow-x: auto }
+  .pair .k { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 6px }
+  .pair code { white-space: pre; color: var(--text) }
+  .foot { font-family: var(--mono); font-size: 12px; color: var(--muted); border-top: 1px solid var(--line); padding-top: 18px }
+  .nogl { position: absolute; inset: 0; display: grid; place-items: center; padding: 24px; text-align: center; color: var(--muted) }
+
+  @media (max-width: 640px) {
+    .tagline { display: none }
+    .hud.bl .readout { display: none }
+    .hud.br { bottom: 108px }
+    .hud.bl { bottom: 18px }
+    .pair { grid-template-columns: 1fr }
+  }
+</style>
+
+<section class="stage" id="stage" aria-label="Clock rendered by a hand-wired neural network. Move the pointer to change its weights.">
+  <canvas id="gl"></canvas>
+  <div class="hud tl">
+    <h1>Weight Space Clock</h1>
+    <div class="tagline">A clock written as if/else, compiled into a neural net with no training, then run once per pixel in a shader. Move your pointer to drag its weights away from the hand-written ones.</div>
+    <div class="stats" id="stats"></div>
+  </div>
+  <div class="hud bl">
+    <div class="slice" aria-hidden="true"><div class="dot" id="dot"></div></div>
+    <div class="readout" id="readout"></div>
+  </div>
+  <div class="hud br">
+    <div class="panel">
+      <label for="neuron">Showing <output id="neuronName">output</output></label>
+      <input type="range" id="neuron" min="-1" max="151" value="-1" step="1">
+      <div class="formula" id="formula"></div>
+      <div class="buttons">
+        <button id="home" type="button">Back to exact weights</button>
+        <button id="reroll" type="button">New directions</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<main>
+  <div class="col">
+    <h2>Every pixel runs this clock as a neural network.</h2>
+    <p>The clock is ordinary logic. Find the digit under the pixel, look up which segments that digit lights, and check whether the pixel sits inside one. <a href="https://github.com/chenglou/handwired" target="_blank" rel="noopener">handwired</a> turns every comparison and branch into ReLUs and weighted sums. What comes out is <span id="countText">152 neurons, 10 layers deep</span>, with every weight written by hand. Nothing was trained, and at the center the output is exact.</p>
+    <div class="pair">
+      <div><div class="k">What I wrote</div><code>if (x &gt;= 11.5) slot = 1</code></div>
+      <div><div class="k">What the GPU runs</div><code>slot = relu(1 − relu(23 − 2·x))</code></div>
+    </div>
+    <p>A fragment shader evaluates that network once per pixel, every frame. The weights live in a uniform buffer, so the page can move them while it draws. Your pointer picks a point on a flat slice through weight space, <span style="font-family:var(--mono);font-size:14px">w₀ + a·u + b·v</span>, where w₀ is the hand-written weights and u and v are random directions.</p>
+    <p>Near the center the comparisons stay sharp and you can read the time. Farther out, the staircases that pick a digit soften into gradients, segments leak into each other, and the network keeps drawing something that isn't a clock anymore. The scrubber shows any single neuron as its own image, so you can watch one comparison or one segment test by itself.</p>
+    <p>The last seconds digit is fed in as a fraction for a quarter second before each tick, so you can see a hand-wired network blend from one glyph to the next.</p>
+    <div class="foot">Built with handwired by Cheng Lou (MIT). Pointer or touch: move through weight space. Click: new directions. [ and ]: step through neurons.</div>
+  </div>
+</main>
+
+<script>
+const DATA = /*CLOCK_DATA*/null
+const stage = document.getElementById('stage')
+const canvas = document.getElementById('gl')
+const gl = canvas.getContext('webgl2', {antialias: false, preserveDrawingBuffer: false})
+const $ = id => document.getElementById(id)
+
+const neuronInput = $('neuron')
+neuronInput.max = String(DATA.neurons - 1)
+$('stats').textContent = `${DATA.units} neurons · ${DATA.depth} layers · ${DATA.weightCount} hand-set weights · 0 training steps`
+$('countText').textContent = `${DATA.units} neurons, ${DATA.depth} layers deep`
+
+// Seeded randomness so a lesion is reproducible.
+let seed = 7
+function rand() { seed = (seed + 0x6D2B79F5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296 }
+function gauss() { return Math.sqrt(-2 * Math.log(rand() + 1e-9)) * Math.cos(6.283185307 * rand()) }
+
+const P0 = Float32Array.from(DATA.params)
+const n = P0.length
+const padded = Math.ceil(n / 4) * 4
+const P = new Float32Array(padded)
+let U = new Float32Array(n), V = new Float32Array(n)
+function reroll() {
+  for (let j = 0; j < n; j++) {
+    const scale = 0.035 * Math.abs(P0[j]) + 0.05
+    U[j] = gauss() * scale
+    V[j] = gauss() * scale
+  }
+}
+reroll()
+
+// Pointer → a point (a, b) in the slice. A soft curve keeps the readable region near the center.
+const curve = v => Math.sign(v) * Math.pow(Math.abs(v), 1.6) * 2.4
+let target = {a: 0, b: 0}, cur = {a: 0, b: 0}, vel = {a: 0, b: 0}
+let lastPointer = -1e9
+let homing = false
+function pointer(event) {
+  const rect = stage.getBoundingClientRect()
+  const nx = (event.clientX - rect.left) / rect.width * 2 - 1
+  const ny = (event.clientY - rect.top) / rect.height * 2 - 1
+  target = {a: curve(Math.max(-1, Math.min(1, nx))), b: curve(Math.max(-1, Math.min(1, ny)))}
+  lastPointer = performance.now()
+  homing = false
+}
+stage.addEventListener('pointermove', pointer)
+stage.addEventListener('pointerdown', event => {
+  if (event.target.closest('.panel')) return
+  pointer(event)
+  if (event.pointerType === 'mouse') { seed = (Math.random() * 1e9) | 0; reroll() }
+})
+$('reroll').addEventListener('click', () => { seed = (Math.random() * 1e9) | 0; reroll() })
+$('home').addEventListener('click', () => { target = {a: 0, b: 0}; homing = true; lastPointer = performance.now() })
+for (const id of ['home', 'reroll', 'neuron']) $(id).addEventListener('pointerdown', e => e.stopPropagation())
+$('stage').querySelector('.panel').addEventListener('pointermove', e => e.stopPropagation())
+
+function setNeuron(value) {
+  neuronInput.value = String(value)
+  const v = Number(neuronInput.value)
+  $('neuronName').textContent = v < 0 ? 'output' : `neuron n${v}`
+  $('formula').textContent = v < 0 ? 'lit = sum of (segment on for this digit) × (pixel inside segment)' : `n${v} = ${DATA.labels[v]}`
+}
+neuronInput.addEventListener('input', () => setNeuron(neuronInput.value))
+window.addEventListener('keydown', event => {
+  if (event.key === ']') setNeuron(Math.min(DATA.neurons - 1, Number(neuronInput.value) + 1))
+  if (event.key === '[') setNeuron(Math.max(-1, Number(neuronInput.value) - 1))
+})
+setNeuron(-1)
+
+function fail(message) {
+  const div = document.createElement('div'); div.className = 'nogl'; div.textContent = message; stage.appendChild(div)
+}
+
+if (!gl) {
+  fail('This piece needs WebGL2. Try a recent Chrome, Safari or Firefox.')
+} else {
+  const vs = `#version 300 es
+  void main() { vec2 p = vec2((gl_VertexID << 1) & 2, gl_VertexID & 2); gl_Position = vec4(p * 2.0 - 1.0, 0.0, 1.0); }`
+  const compile = (type, src) => {
+    const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s)
+    if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s))
+    return s
+  }
+  const prog = gl.createProgram()
+  try {
+    gl.attachShader(prog, compile(gl.VERTEX_SHADER, vs))
+    gl.attachShader(prog, compile(gl.FRAGMENT_SHADER, DATA.shader))
+    gl.linkProgram(prog)
+    if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(prog))
+  } catch (error) {
+    console.error(error)
+    fail('The shader failed to compile on this device.')
+  }
+  gl.useProgram(prog)
+  const ubo = gl.createBuffer()
+  gl.bindBuffer(gl.UNIFORM_BUFFER, ubo)
+  gl.bufferData(gl.UNIFORM_BUFFER, P.byteLength, gl.DYNAMIC_DRAW)
+  gl.uniformBlockBinding(prog, gl.getUniformBlockIndex(prog, 'Weights'), 0)
+  gl.bindBufferBase(gl.UNIFORM_BUFFER, 0, ubo)
+  const u = name => gl.getUniformLocation(prog, name)
+  const loc = {res: u('uRes'), scale: u('uScale'), soft: u('uSoft'), colon: u('uColon'), show: u('uShow'), time: u('uTime'), digits: u('uDigits')}
+  gl.bindVertexArray(gl.createVertexArray())
+
+  const dot = $('dot'), readout = $('readout')
+  const fmt = v => (v < 0 ? '−' : '+') + Math.abs(v).toFixed(2)
+  let then = performance.now()
+
+  function resize() {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2)
+    const w = Math.round(stage.clientWidth * dpr), h = Math.round(stage.clientHeight * dpr)
+    if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h }
+  }
+
+  function frame(now) {
+    const dt = Math.min(0.05, (now - then) / 1000); then = now
+    // Idle: drift slowly in and out of the readable region.
+    if (now - lastPointer > 4000 && !homing) {
+      const t = now / 1000
+      const r = 1.1 * (0.5 - 0.5 * Math.cos(t * 0.3))
+      target = {a: r * Math.cos(t * 0.17), b: r * Math.sin(t * 0.23)}
+    }
+    // A critically damped spring toward the target.
+    for (const key of ['a', 'b']) {
+      const k = 60, c = 2 * Math.sqrt(k)
+      vel[key] += (k * (target[key] - cur[key]) - c * vel[key]) * dt
+      cur[key] += vel[key] * dt
+    }
+    for (let j = 0; j < n; j++) P[j] = P0[j] + cur.a * U[j] + cur.b * V[j]
+    gl.bindBuffer(gl.UNIFORM_BUFFER, ubo)
+    gl.bufferSubData(gl.UNIFORM_BUFFER, 0, P)
+
+    resize()
+    gl.viewport(0, 0, canvas.width, canvas.height)
+    const L = DATA.layout
+    const scale = Math.min(canvas.width * 0.78 / L.width, canvas.height * 0.36 / L.height)
+    const r = Math.hypot(cur.a, cur.b)
+    // Sharp comparisons near the exact weights, softer ramps further out.
+    const soft = Math.min(1, r / 1.2)
+
+    const date = new Date()
+    const h = date.getHours(), m = date.getMinutes(), s = date.getSeconds(), ms = date.getMilliseconds()
+    const morph = ms > 750 && s % 10 !== 9 ? (ms - 750) / 250 : 0
+    const eased = morph * morph * (3 - 2 * morph)
+    const digits = [Math.floor(h / 10), h % 10, Math.floor(m / 10), m % 10, Math.floor(s / 10), (s % 10) + eased]
+
+    gl.uniform2f(loc.res, canvas.width, canvas.height)
+    gl.uniform1f(loc.scale, scale)
+    gl.uniform1f(loc.soft, soft)
+    gl.uniform1f(loc.colon, ms < 500 ? 1 : 0.15)
+    gl.uniform1f(loc.show, Number(neuronInput.value))
+    gl.uniform1f(loc.time, now / 1000)
+    gl.uniform1fv(loc.digits, digits)
+    gl.drawArrays(gl.TRIANGLES, 0, 3)
+
+    dot.style.left = `${50 + Math.max(-46, Math.min(46, cur.a / 2.4 * 46))}%`
+    dot.style.top = `${50 + Math.max(-46, Math.min(46, cur.b / 2.4 * 46))}%`
+    readout.innerHTML = `w = w₀ <b>${fmt(cur.a)}</b>·u <b>${fmt(cur.b)}</b>·v<br>distance from hand-wired <b>${r.toFixed(2)}</b>`
+    requestAnimationFrame(frame)
+  }
+  requestAnimationFrame(frame)
+}
+</script>
