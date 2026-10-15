@@ -78,11 +78,21 @@ const data = {
   reglus: ops.filter(op => op.kind === 'reglu').length, depth: Math.max(...ops.map(op => op.depth)),
   layout: clockLayout,
 }
+// Favicons, inlined so the page works anywhere: the SVG for browsers that take one, PNGs for the rest and iOS.
+const asset = (name: string) => Bun.file(new URL(`./${name}`, import.meta.url))
+const svgIcon = (await asset('favicon.svg').text()).trim()
+const pngIcon = async (name: string) => `data:image/png;base64,${Buffer.from(await asset(name).arrayBuffer()).toString('base64')}`
+const icons = [
+  `<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,${encodeURIComponent(svgIcon)}">`,
+  `<link rel="icon" type="image/png" sizes="32x32" href="${await pngIcon('favicon-32.png')}">`,
+  `<link rel="apple-touch-icon" href="${await pngIcon('favicon-180.png')}">`,
+].join('\n')
+
 const page = await Bun.file(new URL('./page-annotated.html', import.meta.url)).text()
 await Bun.write(new URL('./dreamclock-annotated.html', import.meta.url), page.replace('/*CLOCK_DATA*/null', () => JSON.stringify(data)))
 console.log(`wrote dreamclock-annotated.html: ${ops.length} neurons, ${params.length} params (${vec4s} vec4), shader ${shader.length} chars`)
 
-const bare = await Bun.file(new URL('./page.html', import.meta.url)).text()
+const bare = (await Bun.file(new URL('./page.html', import.meta.url)).text()).replace('<!--ICONS-->', () => icons)
 await Bun.write(new URL('./dreamclock.html', import.meta.url), bare.replace('/*CLOCK_DATA*/null', () => JSON.stringify(data)))
 console.log('wrote dreamclock.html')
 
